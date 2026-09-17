@@ -1,11 +1,19 @@
 <script setup lang="ts">
+import { provideThree } from '@/composables/useThree';
 import { OrbitControls, RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { color, mx_noise_float, normalLocal, pmremTexture, positionLocal, uniform, vec3 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
-import { onBeforeUnmount, onMounted } from 'vue';
+import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 const ascpectRatio = window.innerWidth / window.innerHeight;
+const containerRef = useTemplateRef<HTMLDivElement>('sphereContainer')
+
 let cleanup: (() => void) | undefined;
+
+// non-reactive handles
+const sceneRef = shallowRef<THREE.Scene>();
+const cameraRef = shallowRef<THREE.PerspectiveCamera>();
+const rendererRef = shallowRef<THREE.WebGPURenderer>();
 
 // Basic setup
 const scene = new THREE.Scene();
@@ -60,8 +68,7 @@ const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
 onMounted(async () => { 
-    const container = document.getElementById("sphereContainer");
-    container?.appendChild(renderer.domElement);
+    containerRef.value!.appendChild(renderer.domElement);
     await renderer.init();
 
     // Room environment for reflections
@@ -74,6 +81,12 @@ onMounted(async () => {
     const tintColor = color(0xe0829d);
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
+
+    sceneRef.value = scene;
+    cameraRef.value = camera;
+    rendererRef.value = renderer;
+
+    provideThree({ scene: scene, camera: camera, renderer: renderer });
 
     renderer.setAnimationLoop((time: number): void => {
         uTime.value = time * 0.001;
@@ -96,7 +109,8 @@ onBeforeUnmount(() => cleanup?.());
 
 </script>
 <template>
-    <div id="sphereContainer"></div>
+    <div ref="sphereContainer"></div>
+    <slot />
 </template>
 
 <style scoped></style>
