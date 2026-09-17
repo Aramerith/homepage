@@ -1,38 +1,18 @@
 <script setup lang="ts">
-import { provideThree } from '@/composables/useThree';
-import { OrbitControls, RoomEnvironment } from 'three/examples/jsm/Addons.js';
+import { useThree } from '@/composables/useThree';
+import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { color, mx_noise_float, normalLocal, pmremTexture, positionLocal, uniform, vec3 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
-import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 
-const ascpectRatio = window.innerWidth / window.innerHeight;
-const containerRef = useTemplateRef<HTMLDivElement>('sphereContainer')
-
-let cleanup: (() => void) | undefined;
-
-// non-reactive handles
-const sceneRef = shallowRef<THREE.Scene>();
-const cameraRef = shallowRef<THREE.PerspectiveCamera>();
-const rendererRef = shallowRef<THREE.WebGPURenderer>();
-
-// Basic setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, ascpectRatio, 0.1, 1000);
-const renderer = new THREE.WebGPURenderer({ antialias: true });
-
-scene.background = new THREE.Color(0x000010);
-renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.z = 4;
-scene.add(camera);
-
-// Orbit controls
-new OrbitControls(camera, renderer.domElement);
+const { scene, renderer, onFrame, ready } = useThree();
+let unsubscribe: (() => void) | undefined;
 
 // Sphere material
 const uTime = uniform(0);
-const uAmplitude = uniform(1.2);
+const uAmplitude = uniform(4);
 const uFrequency = uniform(1.5);
-const uSpeed = uniform(0.5);
+const uSpeed = uniform(0.6);
 
 function displace(p: any) {
     const noisePos = p.mul(uFrequency).add(vec3(0, 0, uTime.mul(uSpeed)));
@@ -41,7 +21,7 @@ function displace(p: any) {
 }
 
 const material = new THREE.MeshStandardNodeMaterial({
-    color: 0x036264,
+    color: 0x111111,
     roughness: 0.05,
     metalness: 0.85,
 });
@@ -62,55 +42,40 @@ material.normalNode = p1.sub(p0).cross(p2.sub(p0)).normalize();
 
 // Sphere geometry and mesh
 
-const geometry = new THREE.IcosahedronGeometry(1, 32);
+const geometry = new THREE.IcosahedronGeometry(10, 32);
 const mesh = new THREE.Mesh(geometry, material);
 
-scene.add(mesh);
-
 onMounted(async () => { 
-    containerRef.value!.appendChild(renderer.domElement);
-    await renderer.init();
-
+    await ready;
     // Room environment for reflections
     const environment = new RoomEnvironment();
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     const envRT = pmremGenerator.fromScene(environment, 0.04);
     const envMap = envRT.texture;
-    scene.environment = envMap;
 
-    const tintColor = color(0xe0829d);
+    const tintColor = color(0x880000);
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
-
-    sceneRef.value = scene;
-    cameraRef.value = camera;
-    rendererRef.value = renderer;
-
-    provideThree({ scene: scene, camera: camera, renderer: renderer });
-
-    renderer.setAnimationLoop((time: number): void => {
-        uTime.value = time * 0.001;
-        uFrequency.value = 2.0 + Math.sin(time * 0.001) * 0.5;
-        mesh.rotation.x = time * 0.0003;
-        mesh.rotation.y = time * 0.0002;
-        mesh.rotation.z = time * 0.0001;
-        renderer.render(scene, camera);
+    scene.add(mesh);
+    unsubscribe = onFrame((time): void => {
+        uTime.value = time;
+        uFrequency.value = 0.25 + Math.sin(time * 0.5) * 0.1;
+        mesh.rotation.x = time * 0.3;
+        mesh.rotation.y = time * 0.2;
+        mesh.rotation.z = time * 0.1;
     });
-
-    cleanup = (): void => {
-        renderer?.setAnimationLoop(null);
-        geometry.dispose();
-        material.dispose();
-        renderer?.dispose();
-    }
 });
 
-onBeforeUnmount(() => cleanup?.());
+onBeforeUnmount(() => {
+    unsubscribe?.();
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    (mesh.material as THREE.Material).dispose();
+});
 
 </script>
 <template>
-    <div ref="sphereContainer"></div>
-    <slot />
+    <span></span>
 </template>
 
 <style scoped></style>
