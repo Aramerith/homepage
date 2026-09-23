@@ -19,7 +19,7 @@ export const CameraSettings = Object.freeze({
 });
 
 export const LightSettings = Object.freeze({
-    COLOR: 0x8800ff,
-    INTENSITY: 100000,
-    DISTANCE: 1000000
+    COLOR: 0xAA00FF,
+    INTENSITY: 20000,
+    DISTANCE: 0
 });

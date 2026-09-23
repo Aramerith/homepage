@@ -53,7 +53,7 @@ onMounted(async () => {
     const envRT = pmremGenerator.fromScene(environment, 0.04);
     const envMap = envRT.texture;
 
-    const tintColor = color(0x880000);
+    const tintColor = color(0x990044);
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
     scene.add(mesh);

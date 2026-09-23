@@ -1,25 +1,30 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
+import { useTour, type TourTarget } from '@/composables/useTour';
 import { MenuCubeSettings } from '@/constants/objectParams';
 import getRadialPosition from '@/three/radialPosition';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
-import { Fn, positionLocal, sin, uniform, time, vec3, hash, uv, vec4, floor, step, mix, cameraWorldMatrix, modelWorldMatrixInverse, modelViewMatrix, color, pmremTexture, vec2, varying, materialColor, screenUV } from 'three/tsl';
+import { Fn, positionLocal, sin, uniform, time, vec3, hash, vec4, floor, step, mix, cameraWorldMatrix, modelWorldMatrixInverse, modelViewMatrix, color, pmremTexture, vec2, varying, materialColor, screenUV, screenCoordinate, fract } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
+const tour = useTour();
 
 const { scene, onFrame, ready, renderer } = useThree();
 let unsubscribe: (() => void) | undefined;
+let unregister: (() => void) | null = null;
 
 const props = defineProps<{
     size: number,
     distance: number,
     horizontalAngle: number,
-    verticalAngle: number
+    verticalAngle: number,
+    targetName: TourTarget
 }>();
 const rotationX = Math.random() * MenuCubeSettings.ROTATION_SPEED;
 const rotationY = Math.random() * MenuCubeSettings.ROTATION_SPEED;
 const rotationZ = Math.random() * MenuCubeSettings.ROTATION_SPEED;
+const tmp = new THREE.Vector3();
 
 const geometry = new THREE.BoxGeometry(
     props.size,
@@ -31,8 +36,8 @@ const geometry = new THREE.BoxGeometry(
 );
 const material = new THREE.MeshStandardNodeMaterial({
     color: Math.random() * 0xFFFFFF,
-    roughness: 0.5,
-    metalness: 1,
+    roughness: 0.3,
+    metalness: 0,
 });
 
 const vGlitchState = varying(vec2(0.0, 0.0));
@@ -102,6 +107,7 @@ material.colorNode = Fn(() => {
     const b = sample(ab.negate());
 
     const glitchColor = vec3(r, g, b);
+
     const baseColor = materialColor;
 
     return vec4(mix(baseColor, glitchColor, isGlitched.mul(glitchStrength)), 1.0);
@@ -110,6 +116,7 @@ material.colorNode = Fn(() => {
 const cube = new THREE.Mesh(geometry, material);
 
 cube.position.copy(getRadialPosition(props.distance, props.horizontalAngle, props.verticalAngle));
+cube.name = props.targetName;
 
 scene.add(cube);
 
@@ -135,12 +142,20 @@ onMounted(async () => {
         cube.rotation.y += rotationY;
         cube.rotation.z += rotationZ;
     });
+
+    unregister = tour.registerTarget(props.targetName, () => {
+        if (!cube.parent) return null;
+        return cube.getWorldPosition(tmp).clone();
+    });
+
 });
 
 onBeforeUnmount(() => {
     scene.remove(cube);
     cube.dispose();
     unsubscribe?.();
+    unregister?.();
+    unregister = null;
 });
 
 </script>

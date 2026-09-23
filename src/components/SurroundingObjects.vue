@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
 import { generatePlacements } from '@/three/placement';
-import { cos, float, Fn, instanceIndex, normalGeometry, positionGeometry, sin, storage, time, vec4 } from 'three/tsl';
+import { cos, float, Fn, instanceIndex, normalGeometry, positionGeometry, sin, storage, time, transformNormalToView, vec4 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
@@ -27,6 +27,8 @@ onMounted((): void => {
     objects.frustumCulled = false;
 
     const dummy = new THREE.Object3D();
+    const _up = new THREE.Vector3(0, 0, 1);
+    const _outward = new THREE.Vector3();
 
     const placements = generatePlacements({
         count: props.count,
@@ -55,10 +57,11 @@ onMounted((): void => {
         phaseData[i] = Math.random() * Math.PI * 2;
 
         dummy.position.set(p.x, p.y, p.z);
+        _outward.set(p.x, p.y, p.z).normalize();
+        dummy.quaternion.setFromUnitVectors(_up, _outward);
         dummy.updateMatrix();
         objects.setMatrixAt(i, dummy.matrix);
     }
-
     const axisSpeedAttr = new THREE.StorageInstancedBufferAttribute(axisSpeedData, 4);
     const phaseAttr = new THREE.StorageInstancedBufferAttribute(phaseData, 1);
     const colorAttr = new THREE.StorageInstancedBufferAttribute(colorData, 3);
@@ -82,10 +85,12 @@ onBeforeUnmount((): void => {
 
 function setupMaterialData(axisSpeedStorage: THREE.StorageBufferNode<"vec4">,
     phaseStorage: THREE.StorageBufferNode<"float">,
-    colorStorage: THREE.StorageBufferNode<"vec3">): THREE.MeshStandardNodeMaterial {
+    colorStorage: THREE.StorageBufferNode<"vec3">
+): THREE.MeshStandardNodeMaterial {
+    const matrixSnapshot = new Float32Array(objects!.instanceMatrix.array);   
     const instanceMatrixNode = storage(
         new THREE.StorageInstancedBufferAttribute(
-            objects!.instanceMatrix.array,
+            matrixSnapshot,
             16
         ),
         "mat4",
@@ -107,16 +112,23 @@ function setupMaterialData(axisSpeedStorage: THREE.StorageBufferNode<"vec4">,
 
     const angle = phase.add(speed.mul(time));
 
-    const instanceMat = instanceMatrixNode.element(instanceIndex).toMat4().toVar();
-    const instancePos = instanceMat.mul(vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-
     const material = new THREE.MeshStandardNodeMaterial({
-        roughness: 0,
-        metalness: 0
+        roughness: 0.15,
+        metalness: 0.8
     });
 
-    material.positionNode = rotateAroundAxis(positionGeometry, axis, angle).add(instancePos);
-    material.normalNode = rotateAroundAxis(normalGeometry, axis, angle);
+    material.positionNode = Fn(() => {
+        const spun = rotateAroundAxis(positionGeometry, axis, angle);
+        const m = instanceMatrixNode.element(instanceIndex).toMat4();
+        return m.mul(vec4(spun, 1.0)).xyz;
+    })();
+    material.normalNode = Fn(() => {
+        const spun = rotateAroundAxis(normalGeometry, axis, angle);
+        const m = instanceMatrixNode.element(instanceIndex).toMat4();
+        const worldNormal = m.mul(vec4(spun, 0.0)).xyz;
+
+        return transformNormalToView(worldNormal);
+    })();
     material.colorNode = colorStorage.element(instanceIndex);
 
     return material;
