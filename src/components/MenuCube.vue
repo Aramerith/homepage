@@ -1,21 +1,14 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
+import { MenuCubeSettings } from '@/constants/objectParams';
 import getRadialPosition from '@/three/radialPosition';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { Fn, positionLocal, sin, uniform, time, vec3, hash, uv, vec4, floor, step, mix, cameraWorldMatrix, modelWorldMatrixInverse, modelViewMatrix, color, pmremTexture, vec2, varying, materialColor, screenUV } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
-// constants
-const SEGMENT_SIZE = 16;
-const GLITCH_MULTIPLIER = 1.2;
-const GLITCH_DECAY = 0.9;
-const GLITCH_SPEED = 50000;
-const GLITCH_CHANCE_PERCENT = 0.2;
 
-
-
-const { scene, onFrame, ready, renderer } = useThree(); 
+const { scene, onFrame, ready, renderer } = useThree();
 let unsubscribe: (() => void) | undefined;
 
 const props = defineProps<{
@@ -24,11 +17,18 @@ const props = defineProps<{
     horizontalAngle: number,
     verticalAngle: number
 }>();
-const rotationX = Math.random() * 0.001;
-const rotationY = Math.random() * 0.001;
-const rotationZ = Math.random() * 0.001;
+const rotationX = Math.random() * MenuCubeSettings.ROTATION_SPEED;
+const rotationY = Math.random() * MenuCubeSettings.ROTATION_SPEED;
+const rotationZ = Math.random() * MenuCubeSettings.ROTATION_SPEED;
 
-const geometry = new THREE.BoxGeometry(props.size, props.size, props.size, SEGMENT_SIZE, SEGMENT_SIZE, SEGMENT_SIZE);
+const geometry = new THREE.BoxGeometry(
+    props.size,
+    props.size,
+    props.size,
+    MenuCubeSettings.SEGMENT_SIZE,
+    MenuCubeSettings.SEGMENT_SIZE,
+    MenuCubeSettings.SEGMENT_SIZE
+);
 const material = new THREE.MeshStandardNodeMaterial({
     color: Math.random() * 0xFFFFFF,
     roughness: 0.5,
@@ -39,7 +39,7 @@ const vGlitchState = varying(vec2(0.0, 0.0));
 
 const glitchStrength = uniform(0.0);
 const bandCount = uniform(3);
-const glitchSpeed = uniform(GLITCH_SPEED);
+const glitchSpeed = uniform(MenuCubeSettings.GLITCH_SPEED);
 const glitchSeed = uniform(0.0);
 const jitterAmount = uniform(0);
 
@@ -124,11 +124,11 @@ onMounted(async () => {
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
     unsubscribe = onFrame((time: number): void => {
-        if (Math.random() > (1 - GLITCH_CHANCE_PERCENT * 0.01)) {
-            glitchStrength.value = Math.max(Math.random(), 0.5) * props.size * GLITCH_MULTIPLIER;
+        if (Math.random() > (1 - MenuCubeSettings.GLITCH_CHANCE_PERCENT * 0.01)) {
+            glitchStrength.value = Math.max(Math.random(), 0.5) * props.size * MenuCubeSettings.GLITCH_MULTIPLIER;
             glitchSeed.value = Math.random() * 1000.0;
         } else {
-            glitchStrength.value *= GLITCH_DECAY;
+            glitchStrength.value *= MenuCubeSettings.GLITCH_DECAY;
         }
 
         cube.rotation.x += rotationX;

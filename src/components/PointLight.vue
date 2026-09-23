@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
+import { LightSettings } from '@/constants/objectParams';
 import * as THREE from 'three/webgpu'
 import { onBeforeUnmount, onMounted } from 'vue';
 
 const { scene } = useThree();
 
-const light = new THREE.PointLight(0x8800ff, 100000, 1000000);
+const light = new THREE.PointLight(LightSettings.COLOR, LightSettings.INTENSITY, LightSettings.DISTANCE);
 light.position.set(0, 0, 0);
 light.castShadow = false;
 

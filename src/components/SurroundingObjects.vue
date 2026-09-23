@@ -6,7 +6,10 @@ import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
 const props = defineProps<{
-    count: number
+    count: number,
+    minDistance: number,
+    maxDistance: number,
+    gap: number
 }>();
 let unsubscribe: (() => void) | undefined;
 
@@ -27,9 +30,9 @@ onMounted((): void => {
 
     const placements = generatePlacements({
         count: props.count,
-        rInner: 50,
-        rOuter: 800,
-        minDistance: 10 
+        rInner: props.minDistance,
+        rOuter: props.maxDistance,
+        minDistance: props.gap
     });
 
     for (let i = 0; i < placements.length; i++) {
