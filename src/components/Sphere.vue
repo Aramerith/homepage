@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
+import { DOF_EXCLUDE_LAYER } from '@/constants/objectParams';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { color, mx_noise_float, normalLocal, pmremTexture, positionLocal, uniform, vec3 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -13,6 +14,10 @@ const uTime = uniform(0);
 const uAmplitude = uniform(4);
 const uFrequency = uniform(1.5);
 const uSpeed = uniform(0.6);
+
+const rotationSpeedX = Math.max(Math.random() / 2, 0.05);
+const rotationSpeedY = Math.max(Math.random() / 2, 0.05);
+const rotationSpeedZ = Math.max(Math.random() / 2, 0.05);
 
 function displace(p: any) {
     const noisePos = p.mul(uFrequency).add(vec3(0, 0, uTime.mul(uSpeed)));
@@ -44,6 +49,7 @@ material.normalNode = p1.sub(p0).cross(p2.sub(p0)).normalize();
 
 const geometry = new THREE.IcosahedronGeometry(10, 32);
 const mesh = new THREE.Mesh(geometry, material);
+mesh.layers.set(DOF_EXCLUDE_LAYER);
 
 onMounted(async () => { 
     await ready;
@@ -60,9 +66,9 @@ onMounted(async () => {
     unsubscribe = onFrame((time): void => {
         uTime.value = time;
         uFrequency.value = 0.25 + Math.sin(time * 0.5) * 0.1;
-        mesh.rotation.x = time * 0.3;
-        mesh.rotation.y = time * 0.2;
-        mesh.rotation.z = time * 0.1;
+        mesh.rotation.x = time * rotationSpeedX;
+        mesh.rotation.y = time * rotationSpeedY;
+        mesh.rotation.z = time * rotationSpeedZ;
     });
 });
 

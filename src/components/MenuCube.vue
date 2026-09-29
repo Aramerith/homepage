@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
 import { useTour, type TourTarget } from '@/composables/useTour';
-import { MenuCubeSettings } from '@/constants/objectParams';
+import { DOF_EXCLUDE_LAYER, MenuCubeSettings } from '@/constants/objectParams';
+import { createGlitchMaterial } from '@/three/glitchEffect';
 import getRadialPosition from '@/three/radialPosition';
+import { createRiftMaterial } from '@/three/riftEffect';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
-import { Fn, positionLocal, sin, uniform, time, vec3, hash, vec4, floor, step, mix, cameraWorldMatrix, modelWorldMatrixInverse, modelViewMatrix, color, pmremTexture, vec2, varying, materialColor, screenUV, screenCoordinate, fract } from 'three/tsl';
+import { color, pmremTexture } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
@@ -34,86 +36,25 @@ const geometry = new THREE.BoxGeometry(
     MenuCubeSettings.SEGMENT_SIZE,
     MenuCubeSettings.SEGMENT_SIZE
 );
+
 const material = new THREE.MeshStandardNodeMaterial({
     color: Math.random() * 0xFFFFFF,
     roughness: 0.3,
     metalness: 0,
 });
 
-const vGlitchState = varying(vec2(0.0, 0.0));
+const { uniforms: glitchUniforms, positionNode: glitchPositionNode, colorNode: glitchColorNode } = createGlitchMaterial();
+// const { uniforms: riftUniforms, positionNode: riftPositionNode, colorNode: riftColorNode } = createRiftMaterial();
 
-const glitchStrength = uniform(0.0);
-const bandCount = uniform(3);
-const glitchSpeed = uniform(MenuCubeSettings.GLITCH_SPEED);
-const glitchSeed = uniform(0.0);
-const jitterAmount = uniform(0);
+material.positionNode = glitchPositionNode;
+material.colorNode = glitchColorNode;
+// riftUniforms.uSize.value = new THREE.Vector3(props.size, props.size, props.size);
 
-const invModelView = modelWorldMatrixInverse.mul(cameraWorldMatrix);
-
-material.positionNode = Fn(() => {
-    const posView = modelViewMatrix.mul(vec4(positionLocal, 1.0)).xyz;
-
-    const stepTime = floor(time.mul(10.0));
-
-    const bandRaw = floor(posView.y.mul(bandCount).add(time.mul(glitchSpeed)));
-    const bandId = bandRaw.add(glitchSeed).add(stepTime.mul(37.0));
-
-    const h1 = hash(vec2(bandId, 0.0));
-    const h2 = hash(vec2(bandId, 1.0));
-
-    const isGlitched = step(h1.oneMinus(), glitchStrength);
-    const direction = h2.sub(0.5).mul(2.0);
-
-    const vId = positionLocal.mul(137.0);
-    const jY = hash(vec2(vId.x, vId.y)).sub(0.5);
-    const jZ = hash(vec2(vId.y, vId.z)).sub(0.5);
-
-    const g = isGlitched.mul(glitchStrength);
-    const shiftX = direction.mul(g).mul(0.4);
-    const shiftY = jY.mul(g).mul(jitterAmount);
-    const shiftZ = jZ.mul(g).mul(jitterAmount);
-
-    vGlitchState.assign(vec2(isGlitched, direction));
-
-    const glitchedView = posView.add(vec3(shiftX, shiftY, shiftZ));
-    return invModelView.mul(vec4(glitchedView, 1.0)).xyz;
-})();
-
-// Chromatic abberation
-material.colorNode = Fn(() => {
-    const posView = modelViewMatrix.mul(vec4(positionLocal, 1.0)).xyz;
-
-    const isGlitched = vGlitchState.x;
-    const direction = vGlitchState.y;
-    const dirSign = step(0.0, direction).mul(2.0).sub(1.0);
-
-    const stepTime = floor(time.mul(10.0));
-
-    const bandRaw = floor(posView.y.mul(bandCount).add(time.mul(glitchSpeed)));
-    const bandId = bandRaw.add(glitchSeed).add(stepTime.mul(37.0));
-
-    const bandShift = hash(vec2(bandId, 3.0)).sub(0.5).mul(0.3);
-
-    const ab = isGlitched.mul(glitchStrength).mul(0.04).mul(dirSign);
-
-    const x = screenUV.x.add(bandShift);
-    const y = screenUV.y;
-
-    const sample = (dx: THREE.Node<"float"> | number): any => {
-        return sin(x.add(dx).mul(50.0).add(y.mul(20.0))).mul(0.5).add(0.5);
-    };
-    const r = sample(ab);
-    const g = sample(0.0);
-    const b = sample(ab.negate());
-
-    const glitchColor = vec3(r, g, b);
-
-    const baseColor = materialColor;
-
-    return vec4(mix(baseColor, glitchColor, isGlitched.mul(glitchStrength)), 1.0);
-})();
+// material.positionNode = riftPositionNode;
+// material.colorNode = riftColorNode;
 
 const cube = new THREE.Mesh(geometry, material);
+cube.layers.set(DOF_EXCLUDE_LAYER);
 
 cube.position.copy(getRadialPosition(props.distance, props.horizontalAngle, props.verticalAngle));
 cube.name = props.targetName;
@@ -132,10 +73,10 @@ onMounted(async () => {
     material.envNode = pmremTexture(envMap).mul(tintColor);
     unsubscribe = onFrame((time: number): void => {
         if (Math.random() > (1 - MenuCubeSettings.GLITCH_CHANCE_PERCENT * 0.01)) {
-            glitchStrength.value = Math.max(Math.random(), 0.5) * props.size * MenuCubeSettings.GLITCH_MULTIPLIER;
-            glitchSeed.value = Math.random() * 1000.0;
+            glitchUniforms.glitchStrength.value = Math.max(Math.random(), 0.5) * props.size * MenuCubeSettings.GLITCH_MULTIPLIER;
+            glitchUniforms.glitchSeed.value = Math.random() * 1000.0;
         } else {
-            glitchStrength.value *= MenuCubeSettings.GLITCH_DECAY;
+            glitchUniforms.glitchStrength.value *= MenuCubeSettings.GLITCH_DECAY;
         }
 
         cube.rotation.x += rotationX;

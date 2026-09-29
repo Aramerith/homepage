@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { type FrameCallback, provideThree } from '@/composables/useThree';
-import { TourTarget, useTour } from '@/composables/useTour';
+import { useTour } from '@/composables/useTour';
 import { CameraSettings } from '@/constants/objectParams';
 import { createCameraArc, type CameraArc } from '@/three/cameraArc';
-import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
@@ -56,6 +55,7 @@ onMounted(async () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.position.set(CameraSettings.POSITION_X, CameraSettings.POSITION_Y, CameraSettings.POSITION_Z);
     camera.lookAt(0, 0, 0);
+    camera.layers.enableAll();
     scene.add(camera);
 
     await renderer.init();
@@ -79,7 +79,6 @@ onMounted(async () => {
 
 
     //scene.environment = envMap;
-
     let t = 0;
 
     renderer.setAnimationLoop((): void => {

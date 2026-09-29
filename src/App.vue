@@ -8,6 +8,8 @@ import SurroundingObjects from './components/SurroundingObjects.vue';
 import { createTour, TourKey, TourTarget } from './composables/useTour.ts';
 import NavButton from './components/NavButton.vue';
 import Navbar from './components/Navbar.vue';
+import PopUpContainer from './components/PopUpContainer.vue';
+import RiftTear from './components/RiftTear.vue';
 
 provide(TourKey, createTour());
 </script>
@@ -21,6 +23,7 @@ provide(TourKey, createTour());
     <MenuCube :vertical-angle="0" :horizontal-angle="270" :distance="40" :size="3" :target-name="TourTarget.CONTACT" />
     <MenuCube :vertical-angle="25" :horizontal-angle="180" :distance="40" :size="5" :target-name="TourTarget.SHADERS" />
     <MenuCube :vertical-angle="-5" :horizontal-angle="0" :distance="40" :size="4" :target-name="TourTarget.SKILLS" />
+    <RiftTear />
   </BaseScene>
   <Navbar>
     <NavButton :menu-target="TourTarget.ABOUT" text="About" />
@@ -28,5 +31,8 @@ provide(TourKey, createTour());
     <NavButton :menu-target="TourTarget.SHADERS" text="Shader playground" />
     <NavButton :menu-target="TourTarget.CONTACT" text="Contact" />
   </Navbar>
+  <PopUpContainer>
+    <span>Want to have something to do? What about someone to do?</span>
+  </PopUpContainer>
 </template>
 <style scoped></style>
