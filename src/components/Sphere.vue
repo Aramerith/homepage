@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
-import { DOF_EXCLUDE_LAYER } from '@/constants/objectParams';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { color, mx_noise_float, normalLocal, pmremTexture, positionLocal, uniform, vec3 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -49,7 +48,6 @@ material.normalNode = p1.sub(p0).cross(p2.sub(p0)).normalize();
 
 const geometry = new THREE.IcosahedronGeometry(10, 32);
 const mesh = new THREE.Mesh(geometry, material);
-mesh.layers.set(DOF_EXCLUDE_LAYER);
 
 onMounted(async () => { 
     await ready;
