@@ -10,12 +10,28 @@ import NavButton from './components/NavButton.vue';
 import Navbar from './components/Navbar.vue';
 import PopUpContainer from './components/PopUpContainer.vue';
 import RiftTear from './components/RiftTear.vue';
+import { ref } from 'vue';
+import { type LoadError } from './composables/useSceneLoad.ts';
+import Loader from './components/Loader.vue';
 
 provide(TourKey, createTour());
+
+const loading = ref(true);
+const errors = ref<LoadError[]>([]);
+
+function onReady(): void {
+  loading.value = false;
+};
+
+function onError(e: LoadError[]): void {
+  errors.value = e;
+  loading.value = false;
+}
+
 </script>
 
 <template>
-  <BaseScene>
+  <BaseScene @ready="onReady" @error="onError">
     <PointLight />
     <Sphere />
     <SurroundingObjects :count="1000" :min-distance="60" :max-distance="900" :gap="20" />
@@ -24,6 +40,7 @@ provide(TourKey, createTour());
     <MenuCube :vertical-angle="25" :horizontal-angle="180" :distance="40" :size="5" :target-name="TourTarget.SHADERS" />
     <MenuCube :vertical-angle="-5" :horizontal-angle="0" :distance="40" :size="4" :target-name="TourTarget.SKILLS" />
     <RiftTear />
+    <Loader v-show="loading" />
   </BaseScene>
   <Navbar>
     <NavButton :menu-target="TourTarget.ABOUT" text="About" />
