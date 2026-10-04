@@ -1,5 +1,4 @@
-import { mx_perlin_noise_float } from 'three/src/nodes/materialx/MaterialXNoise.js';
-import { float, Fn, mix, mx_cell_noise_float, mx_fractal_noise_float, mx_noise_float, mx_worley_noise_float, smoothstep, time, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { float, Fn, mix, mx_fractal_noise_float, smoothstep, time, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 
 export interface RiftUniforms {
