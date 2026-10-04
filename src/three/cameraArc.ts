@@ -1,3 +1,4 @@
+import { easeInOutCubic } from '@/utils/easings';
 import * as THREE from 'three/webgpu';
 
 const DURATION = 1.6;
@@ -12,10 +13,6 @@ export interface ArcOptions {
 export interface CameraArc {
     tick(delta: number): boolean,
     cancel(): void
-}
-
-function easeInOutCubic(t: number): number {
-    return t < 0.5 ? 4 * Math.pow(t, 3) : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 export function createCameraArc(
