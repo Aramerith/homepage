@@ -23,5 +23,3 @@ export const LightSettings = Object.freeze({
     INTENSITY: 20000,
     DISTANCE: 0
 });
-
-export const DOF_EXCLUDE_LAYER = 1;
