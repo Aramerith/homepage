@@ -1,16 +1,18 @@
 <script setup lang="ts">
+import { useSceneLoad } from '@/composables/useSceneLoad';
 import { useThree } from '@/composables/useThree';
 import { useTour, type TourTarget } from '@/composables/useTour';
-import { DOF_EXCLUDE_LAYER, MenuCubeSettings } from '@/constants/objectParams';
+import { MenuCubeSettings } from '@/constants/objectParams';
 import { createGlitchMaterial } from '@/three/glitchEffect';
 import getRadialPosition from '@/three/radialPosition';
-import { createRiftMaterial } from '@/three/riftEffect';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { color, pmremTexture } from 'three/tsl';
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
+// composables
 const tour = useTour();
+const load = useSceneLoad();
 
 const { onFrame, ready, renderer, mainGroup } = useThree();
 let unsubscribe: (() => void) | undefined;
@@ -23,6 +25,10 @@ const props = defineProps<{
     verticalAngle: number,
     targetName: TourTarget
 }>();
+
+const task = load.register(`cube-${props.targetName}`);
+
+
 const rotationX = Math.random() * MenuCubeSettings.ROTATION_SPEED;
 const rotationY = Math.random() * MenuCubeSettings.ROTATION_SPEED;
 const rotationZ = Math.random() * MenuCubeSettings.ROTATION_SPEED;
@@ -54,12 +60,9 @@ material.colorNode = glitchColorNode;
 // material.colorNode = riftColorNode;
 
 const cube = new THREE.Mesh(geometry, material);
-cube.layers.set(DOF_EXCLUDE_LAYER);
 
 cube.position.copy(getRadialPosition(props.distance, props.horizontalAngle, props.verticalAngle));
 cube.name = props.targetName;
-
-mainGroup.add(cube);
 
 onMounted(async () => {
     await ready;
@@ -67,6 +70,9 @@ onMounted(async () => {
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     const envRT = pmremGenerator.fromScene(environment, 0.04);
     const envMap = envRT.texture;
+
+    mainGroup.add(cube);
+    task.resolve();
 
     const tintColor = color(Math.random() * 0xffffff);
 
@@ -97,6 +103,7 @@ onBeforeUnmount(() => {
     unsubscribe?.();
     unregister?.();
     unregister = null;
+    task.resolve();
 });
 
 </script>
