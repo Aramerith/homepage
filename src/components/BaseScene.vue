@@ -34,6 +34,7 @@ const camera = new THREE.PerspectiveCamera(
     CameraSettings.NEAR,
     CameraSettings.FAR
 );
+const mainGroup = new THREE.Group();
 const renderer = new THREE.WebGPURenderer({ antialias: true });
 
 const onFrame = (cb: FrameCallback) => {
@@ -46,7 +47,7 @@ const ready = new Promise<void>((r) => (resolveReady = r));
 
 let cleanup: (() => void) | undefined;
 
-provideThree({scene, camera, renderer, onFrame, ready});
+provideThree({ scene, camera, renderer, onFrame, ready, mainGroup });
 
 onMounted(async () => {
     const clock = new THREE.Timer();
@@ -57,6 +58,7 @@ onMounted(async () => {
     camera.lookAt(0, 0, 0);
     camera.layers.enableAll();
     scene.add(camera);
+    scene.add(mainGroup);
 
     await renderer.init();
 
@@ -134,6 +136,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+    scene.remove(mainGroup);
+    mainGroup.dispose();
     cleanup?.();
 });
 

@@ -9,6 +9,7 @@ export interface ThreeContext {
     renderer: THREE.WebGPURenderer,
     onFrame: (cb: FrameCallback) => () => void,
     ready: Promise<void>
+    mainGroup: THREE.Group
 }
 
 const ThreeKey: InjectionKey<ThreeContext> = Symbol('three');

@@ -12,7 +12,7 @@ import { onBeforeUnmount, onMounted } from 'vue';
 
 const tour = useTour();
 
-const { scene, onFrame, ready, renderer } = useThree();
+const { onFrame, ready, renderer, mainGroup } = useThree();
 let unsubscribe: (() => void) | undefined;
 let unregister: (() => void) | null = null;
 
@@ -59,7 +59,7 @@ cube.layers.set(DOF_EXCLUDE_LAYER);
 cube.position.copy(getRadialPosition(props.distance, props.horizontalAngle, props.verticalAngle));
 cube.name = props.targetName;
 
-scene.add(cube);
+mainGroup.add(cube);
 
 onMounted(async () => {
     await ready;
@@ -92,7 +92,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-    scene.remove(cube);
+    mainGroup.remove(cube);
     cube.dispose();
     unsubscribe?.();
     unregister?.();

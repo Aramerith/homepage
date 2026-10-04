@@ -6,7 +6,7 @@ import { color, mx_noise_float, normalLocal, pmremTexture, positionLocal, unifor
 import * as THREE from 'three/webgpu';
 import { onBeforeUnmount, onMounted } from 'vue';
 
-const { scene, renderer, onFrame, ready } = useThree();
+const { mainGroup, renderer, onFrame, ready } = useThree();
 let unsubscribe: (() => void) | undefined;
 
 // Sphere material
@@ -62,7 +62,7 @@ onMounted(async () => {
     const tintColor = color(0x990044);
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
-    scene.add(mesh);
+    mainGroup.add(mesh);
     unsubscribe = onFrame((time): void => {
         uTime.value = time;
         uFrequency.value = 0.25 + Math.sin(time * 0.5) * 0.1;
@@ -74,7 +74,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
     unsubscribe?.();
-    scene.remove(mesh);
+    mainGroup.remove(mesh);
     mesh.geometry.dispose();
     (mesh.material as THREE.Material).dispose();
 });

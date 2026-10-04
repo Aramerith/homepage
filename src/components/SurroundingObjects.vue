@@ -13,7 +13,7 @@ const props = defineProps<{
 }>();
 let unsubscribe: (() => void) | undefined;
 
-const { scene } = useThree();
+const { mainGroup } = useThree();
 
 let objects: THREE.InstancedMesh | undefined;
 const axisSpeedData = new Float32Array(props.count * 4);
@@ -74,11 +74,11 @@ onMounted((): void => {
     objects.material = material;
 
     objects.matrixWorldNeedsUpdate = true;
-    scene.add(objects);
+    mainGroup.add(objects);
 });
 
 onBeforeUnmount((): void => {
-    scene.remove(objects!);
+    mainGroup.remove(objects!);
     objects?.dispose();
     unsubscribe?.();
 });
