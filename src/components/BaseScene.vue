@@ -2,13 +2,16 @@
 import { provideSceneLoad, type LoadError } from '@/composables/useSceneLoad';
 import { type FrameCallback, provideThree } from '@/composables/useThree';
 import { useTour } from '@/composables/useTour';
+import { AnimationDirection } from '@/constants/animationParams';
 import { CameraSettings } from '@/constants/objectParams';
+import { menuObjectRegistryKey, type MenuObjectAnim } from '@/registry/menuObject';
 import { createCameraArc, type CameraArc } from '@/three/cameraArc';
-import { createIntroAnim, type IntroScaleAnim } from '@/three/introScale';
+import { createIntroAnim } from '@/three/introScale';
+import type { ObjectScaleAnim } from '@/three/objectScaleAnim';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import * as THREE from 'three/webgpu';
-import { nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
-
+import { nextTick, onBeforeUnmount, onMounted, provide, ref, useTemplateRef, watch } from 'vue';
+import RiftTear from '@/components/RiftTear.vue';
 
 const emit = defineEmits<{
     ready: [],
@@ -17,6 +20,7 @@ const emit = defineEmits<{
 
 let stats = undefined;
 let activeArc: CameraArc | null = null;
+let implodeAnim: ObjectScaleAnim | null = null;
 let shouldAnimate = true;
 let cameraTheta = 0;
 
@@ -32,7 +36,8 @@ if (window.location.toString().includes("localhost")) {
 }
 
 const ascpectRatio = window.innerWidth / window.innerHeight;
-const containerRef = useTemplateRef<HTMLDivElement>('sphereContainer')
+const containerRef = useTemplateRef<HTMLDivElement>('sphereContainer');
+const riftRef = ref<InstanceType<typeof RiftTear> | null>(null);
 const callbacks = new Set<FrameCallback>();
 
 // Basic setup
@@ -60,6 +65,9 @@ let cleanup: (() => void) | undefined;
 
 provideThree({ scene, camera, renderer, onFrame, ready, mainGroup });
 
+const handles = new Map<string, MenuObjectAnim>
+provide(menuObjectRegistryKey, handles);
+
 const load = provideSceneLoad();
 
 const afterPaint = (): Promise<void> =>
@@ -68,8 +76,9 @@ const afterPaint = (): Promise<void> =>
     });
 
 // Intro animation
-const introAnim = createIntroAnim(camera, mainGroup, { duration: 4.0, delay: 0.1, cameraSpeedMultiplier: 20 });
+const introAnim = createIntroAnim(camera, mainGroup, { duration: 2.5, delay: 0.5, cameraSpeedMultiplier: 15 });
 let introPlayed = false;
+let implodeFinished = false;
 
 onMounted(async () => {
     containerRef.value!.appendChild(renderer.domElement);
@@ -120,12 +129,13 @@ onMounted(async () => {
         const delta = clock.getDelta();
         t += delta;
         const elapsed = clock.getElapsed();
-        for (const cb of callbacks) cb(t, elapsed);
+        for (const cb of callbacks) cb(delta, elapsed);
         if (!introPlayed) {
             const { finished, extraTheta } = introAnim.tick(delta);
             cameraTheta = extraTheta;
             if (finished) introPlayed = true;
-        } else if (activeArc) {
+        }
+        if (activeArc) {
             const finished = activeArc.tick(delta);
             if (finished) activeArc = null;
         } else if (shouldAnimate) {
@@ -134,6 +144,10 @@ onMounted(async () => {
             const z = CameraSettings.DISTANCE * Math.sin(cameraTheta);
             camera.lookAt(0, 0, 0);
             camera.position.set(x, CameraSettings.POSITION_Y, z);
+        }
+        if (implodeAnim) {
+            implodeFinished = implodeAnim.tick(delta);
+            if (implodeFinished) implodeAnim = null;
         }
 
         renderer.render(scene, camera);
@@ -163,9 +177,21 @@ watch(
 
         activeArc?.cancel();
         activeArc = createCameraArc(camera, pos, {
-            onDone: () => tour.animationFinished(),
+            onDone: () => {
+                tour.animationFinished();
+                const menuCubeHandle = handles.get(targetId);
+                if (menuCubeHandle) {
+                    const riftPos = new THREE.Vector3().copy(pos).setLength(pos.length() - 2);
+                    implodeAnim = menuCubeHandle.getScaleAnimation({
+                        direction: AnimationDirection.FORWARD,
+                        duration: 0.5,
+                        onDone: () => {
+                            riftRef.value?.openRift({ position: { x: riftPos.x, y: riftPos.y, z: riftPos.z } });
+                        }
+                    });
+                }
+            }
         });
-
     }
 )
 
@@ -201,6 +227,7 @@ window.addEventListener('resize', function () {
 
 <template>
     <div ref="sphereContainer">
+        <RiftTear ref="riftRef" />
         <slot />
     </div>
 </template>

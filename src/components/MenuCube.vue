@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useSceneLoad } from '@/composables/useSceneLoad';
+import { useSceneObject } from '@/composables/useSceneObject';
 import { useThree } from '@/composables/useThree';
 import { useTour, type TourTarget } from '@/composables/useTour';
 import { MenuCubeSettings } from '@/constants/objectParams';
+import type { MenuObjectAnim, MenuObjectAnimParam } from '@/registry/menuObject';
 import { createGlitchMaterial } from '@/three/glitchEffect';
+import { createObjectScaleAnim, type ObjectScaleAnim } from '@/three/objectScaleAnim';
 import getRadialPosition from '@/three/radialPosition';
 import { RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { color, pmremTexture } from 'three/tsl';
@@ -27,7 +30,6 @@ const props = defineProps<{
 }>();
 
 const task = load.register(`cube-${props.targetName}`);
-
 
 const rotationX = Math.random() * MenuCubeSettings.ROTATION_SPEED;
 const rotationY = Math.random() * MenuCubeSettings.ROTATION_SPEED;
@@ -64,6 +66,15 @@ const cube = new THREE.Mesh(geometry, material);
 cube.position.copy(getRadialPosition(props.distance, props.horizontalAngle, props.verticalAngle));
 cube.name = props.targetName;
 
+// Implode animation things
+function getScaleAnimation(opts: MenuObjectAnimParam) {
+    return createObjectScaleAnim(cube, opts);
+}
+
+const handle: MenuObjectAnim = { getScaleAnimation }
+
+useSceneObject(props.targetName, handle);
+
 onMounted(async () => {
     await ready;
     const environment = new RoomEnvironment();
@@ -77,7 +88,7 @@ onMounted(async () => {
     const tintColor = color(Math.random() * 0xffffff);
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
-    unsubscribe = onFrame((time: number): void => {
+    unsubscribe = onFrame((delta: number, time: number): void => {
         if (Math.random() > (1 - MenuCubeSettings.GLITCH_CHANCE_PERCENT * 0.01)) {
             glitchUniforms.glitchStrength.value = Math.max(Math.random(), 0.5) * props.size * MenuCubeSettings.GLITCH_MULTIPLIER;
             glitchUniforms.glitchSeed.value = Math.random() * 1000.0;
