@@ -9,7 +9,10 @@ const tour = useTour();
 </script>
 
 <template>
-    <button class="abs-pos" :disabled="!tour.hasTarget(props.menuTarget) || tour.phase.value === TourPhase.ANIMATING" @click="tour.request(props.menuTarget)">{{ text }}</button>
+    <button class="abs-pos" :disabled="!tour.hasTarget(props.menuTarget) || tour.phase.value === TourPhase.ANIMATING"
+        @click="tour.request(props.menuTarget)">
+        {{ text }}
+    </button>
 </template>
 
 <style scoped>

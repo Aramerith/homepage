@@ -45,6 +45,7 @@
     color: transparent;
     animation: font-loading 3s linear 1s infinite;
     filter: drop-shadow(3px 3px 5px #0044ff);
+    text-transform: uppercase;
 }
 
 @keyframes font-loading {

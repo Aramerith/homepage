@@ -61,7 +61,7 @@ onMounted(async () => {
 
     material.envNode = pmremTexture(envMap).mul(tintColor);
     mainGroup.add(mesh);
-    unsubscribe = onFrame((time): void => {
+    unsubscribe = onFrame((delta, time): void => {
         uTime.value = time;
         uFrequency.value = 0.25 + Math.sin(time * 0.5) * 0.1;
         mesh.rotation.x = time * rotationSpeedX;
