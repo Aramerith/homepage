@@ -23,3 +23,8 @@ export const LightSettings = Object.freeze({
     INTENSITY: 20000,
     DISTANCE: 0
 });
+
+export const SurroundingObjectShape = Object.freeze({
+    TORUS: "torus",
+    SPHERE: "sphere"
+});
