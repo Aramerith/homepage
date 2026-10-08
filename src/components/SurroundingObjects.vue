@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useThree } from '@/composables/useThree';
+import { SurroundingObjectShape } from '@/constants/objectParams';
 import { generatePlacements } from '@/three/placement';
 import { cos, float, Fn, instanceIndex, normalGeometry, positionGeometry, sin, storage, time, transformNormalToView, vec4 } from 'three/tsl';
 import * as THREE from 'three/webgpu';
@@ -9,7 +10,9 @@ const props = defineProps<{
     count: number,
     minDistance: number,
     maxDistance: number,
-    gap: number
+    gap: number,
+    shape: string,
+    radius: number
 }>();
 let unsubscribe: (() => void) | undefined;
 
@@ -21,7 +24,16 @@ const phaseData = new Float32Array(props.count);
 const colorData = new Float32Array(props.count * 3);
 
 onMounted((): void => {
-    const geometry = new THREE.TorusGeometry(6, 1, 32, 3);
+    let geometry;
+
+    switch (props.shape) {
+        case SurroundingObjectShape.SPHERE:
+            geometry = new THREE.IcosahedronGeometry(props.radius, 0);
+            break;
+        case SurroundingObjectShape.TORUS:
+        default:
+            geometry = new THREE.TorusGeometry(props.radius, 1, 32, 3);
+    }
 
     objects = new THREE.InstancedMesh(geometry, undefined, props.count);
     objects.frustumCulled = false;
