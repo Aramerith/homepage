@@ -2,10 +2,12 @@ import { float, Fn, mix, mx_fractal_noise_float, smoothstep, time, uniform, uv, 
 import * as THREE from 'three/webgpu';
 
 export interface RiftUniforms {
-    uProgress: THREE.UniformNode<"float", number>,
+    uPower: THREE.UniformNode<"float", number>
     uAspect: THREE.UniformNode<"float", number>,
     uNoiseAmp: THREE.UniformNode<"float", number>,
-    uNoiseScale: THREE.UniformNode<"float", number>
+    uNoiseScale: THREE.UniformNode<"float", number>,
+    uGlowWidth: THREE.UniformNode<"float", number>,
+    uRaySpeed: THREE.UniformNode<"float", number>
 }
 
 export interface RiftMaterial {
@@ -14,9 +16,8 @@ export interface RiftMaterial {
 }
 
 export function createRiftMaterial(): RiftMaterial {
-    const uProgress = uniform(0.0);
     const uAspect = uniform(1.0);
-    const uPower = uniform(0.76);
+    const uPower = uniform(0.0);
     const uEdgeSharp = uniform(30.0);
     const uIntensity = uniform(1);
     const uHalfX = uniform(0.35);
@@ -39,7 +40,7 @@ export function createRiftMaterial(): RiftMaterial {
     const uRayDisplace = uniform(0.005);
     const uRayEdgeDim  = uniform(0.15);
 
-    const uniforms: RiftUniforms = { uProgress, uAspect, uNoiseAmp, uNoiseScale };
+    const uniforms: RiftUniforms = { uPower, uAspect, uNoiseAmp, uNoiseScale, uGlowWidth, uRaySpeed };
 
     const fragmentNode = Fn(() => {
         // Shape
